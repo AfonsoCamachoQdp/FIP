@@ -506,7 +506,13 @@
     if(data.clientId === clientId) return;
     hasRemote = true;
     suppressPush = true;
-    state = { ...data.state, history: [] };
+    const incoming = { ...data.state, history: [] };
+    if(incoming.setScores && !Array.isArray(incoming.setScores)){
+      incoming.setScores = Object.keys(incoming.setScores)
+        .sort((a,b) => Number(a) - Number(b))
+        .map(k => incoming.setScores[k]);
+    }
+    state = incoming;
     applyMeta(data.meta);
     render();
     suppressPush = false;
@@ -703,7 +709,10 @@
     }
 
     // sets (3 caixas) - mostra o set atual mesmo sem resultado fechado
-    const s = state.setScores;
+    const sRaw = state.setScores || [];
+    const s = Array.isArray(sRaw)
+      ? sRaw
+      : Object.keys(sRaw).sort((a,b) => Number(a) - Number(b)).map(k => sRaw[k]);
     const currentIdx = Math.min(s.length, 2);
     const fill = (idx, team, show, val) => {
       const el = document.getElementById(`s${idx+1}${team}`);
