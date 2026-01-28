@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Placar Padel — Overlay</title>
+  <style>
+    :root{
+      --qdp-blue:#0C3E5F;
+      --qdp-green:#B3C4B6;
+      --panel: rgba(7,16,24,0.86);
+      --line: rgba(179,196,182,0.28);
+      --score-dark: #1e242a;
+      --score-dark-border: #2b3136;
+      --score-yellow: #f0c85a;
+      --txt: #fff;
+      --muted: rgba(255,255,255,0.78);
+      --shadow: 0 10px 26px rgba(0,0,0,0.35);
+      --radius: 14px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 420px at 20% 0%, rgba(179,196,182,0.08), transparent 55%),
+        radial-gradient(900px 420px at 80% 0%, rgba(12,62,95,0.18), transparent 55%),
+        #0b1116;
+      color:var(--txt);
+    }
+
+    .page{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding: 2vh 1vw;
+    }
+
+    .scoreboard-wrap{
+      width: fit-content;
+      max-width: 97vw;
+    }
+
+    .editable-top{
+      width:100%;
+      display:flex;
+      justify-content:flex-start;
+      margin-bottom: 10px;
+    }
+    .editable-top .title{
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 8px;
+      outline: none;
+      cursor:text;
+    }
+    .editable-top .title:focus{
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 0 0 2px rgba(179,196,182,0.22) inset;
+    }
+
+    .logo{
+      display:block;
+      margin: 8px auto 16px;
+      width: min(60vw, 360px);
+      max-width: 360px;
+      height: auto;
+    }
+
+    .overlay{
+      width: fit-content;
+      background: linear-gradient(135deg, rgba(179,196,182,0.10), rgba(12,62,95,0.12)) , var(--panel);
+      border: 0;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position: relative;
+    }
+    .overlay::before,
+    .overlay::after{
+      content:"";
+      position:absolute;
+      top: 8px;
+      bottom: 8px;
+      width: 52%;
+      pointer-events:none;
+    }
+    .overlay::before{
+      left: 8px;
+      border: 3px solid var(--qdp-green);
+      border-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .overlay::after{
+      right: 8px;
+      border: 3px solid var(--qdp-blue);
+      border-left: 0;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: fit-content(520px) auto auto auto;
+      align-items:center;
+      gap: 6px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(12,62,95,0.25);
+    }
+    .row:last-child{ border-bottom:0; }
+
+    .team{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      width: fit-content;
+      max-width: 460px;
+      min-width:0;
+    }
+
+    /* Nome com MAIS letras: permite 2 linhas e reduz melhor */
+    .name{
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      font-size: 28px;
+      line-height: 1.10;
+      padding: 6px 10px;
+      border-radius: 10px;
+      outline:none;
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 460px;
+      white-space: pre-wrap;    /* permite quebrar linha manual/auto */
+      overflow: visible;
+      display: block;
+      cursor:text;
+      color: var(--qdp-green);
+    }
+    .name:focus{
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 0 0 2px rgba(179,196,182,0.22) inset;
+    }
+
+    .serve{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 0;
+      border-radius: 999px;
+      border: 0;
+      background: transparent;
+      cursor:pointer;
+      user-select:none;
+      font-size: 16px;
+      color: var(--muted);
+      flex: 0 0 auto;
+      white-space:nowrap;
+    }
+    .dot{
+      width:14px; height:14px; border-radius:999px;
+      background: #f5d75b;
+      box-shadow: 0 0 0 4px rgba(245,215,91,0.22);
+    }
+    .dot.on{
+      background: #f5d75b;
+      box-shadow: 0 0 0 4px rgba(245,215,91,0.25);
+    }
+
+    .sets{
+      display:flex;
+      gap: 4px;
+      justify-self:start;
+      width: auto;
+    }
+    .setbox{
+      border: 1px solid var(--score-dark-border);
+      border-radius: 6px;
+      padding: 0;
+      text-align:center;
+      background: var(--score-dark);
+      width: 44px;
+      height: 44px;
+      display:grid;
+      place-items:center;
+    }
+    .setbox .top{
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .setbox .val{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      width: 100%;
+      height: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .games, .points{
+      justify-self:start;
+      text-align:right;
+      border-left: 0;
+      padding-left: 0;
+    }
+    .points{
+      margin-left: 6px;
+    }
+    .games .lbl, .points .lbl{
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .setbox .top,
+    .games .lbl,
+    .points .lbl{
+      display:none;
+    }
+    .games .val{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 0;
+      border-radius: 6px;
+      background: var(--score-dark);
+      border: 1px solid var(--score-dark-border);
+      width: 44px;
+      height: 44px;
+    }
+
+    /* PONTOS clicáveis (sem botões) */
+    .points .val{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      padding: 0;
+      border-radius: 6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select:none;
+      background: var(--score-yellow);
+      border: 1px solid #d2ad45;
+      color: #1b1b1b;
+      width: 44px;
+      height: 44px;
+    }
+    .points .val:hover{
+      background: #f6d06a;
+    }
+    .points .val:active{
+      transform: translateY(1px);
+    }
+
+    /* Botões mínimos só para Undo/Reset */
+    .mini{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-left:auto;
+    }
+    .btnMini{
+      display:none;
+    }
+    .btnMini{
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      color: var(--txt);
+      font-weight: 900;
+      font-size: 22px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btnMini:active{ transform: translateY(1px); }
+
+    .footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(0,0,0,0.18);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.03em;
+    }
+    .footer{
+      display:none;
+    }
+    .footer .info{
+      display:none;
+    }
+    .footer .kbd{
+      color: rgba(255,255,255,0.86);
+      font-weight: 800;
+    }
+    .footer .keys{
+      display:none;
+    }
+
+    .winner{
+      display:none;
+      margin-left:auto;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(179,196,182,0.35);
+      background: rgba(179,196,182,0.12);
+      color: #eafff6;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      white-space:nowrap;
+    }
+
+    @media (max-width: 1200px){
+      .row{ grid-template-columns: fit-content(420px) auto auto auto; }
+      .team{ max-width: 360px; }
+      .name{ max-width: 360px; font-size: 24px; }
+      .points .val{ font-size: 20px; }
+      .games .val{ font-size: 20px; }
+      .setbox .val{ font-size: 20px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="scoreboard-wrap">
+      <div class="editable-top">
+        <div class="title" id="editableTitle" contenteditable="true" spellcheck="false">Texto editável</div>
+      </div>
+
+      <div class="overlay">
+
+    <!-- EQUIPA A -->
+    <div class="row" id="rowA">
+      <div class="team">
+        <div id="nameA" class="name" contenteditable="true" spellcheck="false">EQUIPA A — JOGADOR 1 / JOGADOR 2</div>
+
+        <div id="serveToggleA" class="serve" title="Trocar serviço (atalho: S)">
+          <span class="dot" id="dotA"></span>
+        </div>
+
+        <div class="mini">
+          <button class="btnMini" id="btnUndo" title="Undo (atalho: Z)">↶</button>
+        </div>
+      </div>
+
+      <div class="sets">
+        <div class="setbox"><div class="top">Set 1</div><div class="val" id="s1A">–</div></div>
+        <div class="setbox"><div class="top">Set 2</div><div class="val" id="s2A">–</div></div>
+        <div class="setbox"><div class="top">Set 3</div><div class="val" id="s3A">–</div></div>
+      </div>
+
+      <div class="games">
+        <div class="lbl">Jogos</div>
+        <div class="val" id="gamesA">0</div>
+      </div>
+
+      <div class="points">
+        <div class="lbl" id="pointsLbl">Pontos</div>
+        <div class="val" id="pointsA" title="Clica para adicionar ponto à Equipa A (atalho: A)">0</div>
+      </div>
+    </div>
+
+    <!-- EQUIPA B -->
+    <div class="row" id="rowB">
+      <div class="team">
+        <div id="nameB" class="name" contenteditable="true" spellcheck="false">EQUIPA B — JOGADOR 1 / JOGADOR 2</div>
+
+        <div id="serveToggleB" class="serve" title="Trocar serviço (atalho: S)">
+          <span class="dot" id="dotB"></span>
+        </div>
+
+        <div class="mini">
+          <button class="btnMini" id="btnReset" title="Reset (atalho: R)">⟲</button>
+        </div>
+      </div>
+
+      <div class="sets">
+        <div class="setbox"><div class="top">Set 1</div><div class="val" id="s1B">–</div></div>
+        <div class="setbox"><div class="top">Set 2</div><div class="val" id="s2B">–</div></div>
+        <div class="setbox"><div class="top">Set 3</div><div class="val" id="s3B">–</div></div>
+      </div>
+
+      <div class="games">
+        <div class="lbl">Jogos</div>
+        <div class="val" id="gamesB">0</div>
+      </div>
+
+      <div class="points">
+        <div class="lbl" id="modeLbl">Normal</div>
+        <div class="val" id="pointsB" title="Clica para adicionar ponto à Equipa B (atalho: L)">0</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="info">
+        Melhor de 3 · 6–6 TB (até 7, dif. 2) · Vantagens ·
+        <span class="keys">Teclas: <span class="kbd">A</span> (A) · <span class="kbd">L</span> (B) · <span class="kbd">Z</span> (Undo) · <span class="kbd">S</span> (Serviço) · <span class="kbd">R</span> (Reset)</span>
+      </div>
+      <div class="winner" id="winner"></div>
+    </div>
+    </div>
+  </div>
+
+<script>
+  // Regras:
+  // - Melhor de 3 sets
+  // - Set até 6 jogos; 6-6 -> tie-break
+  // - Tie-break até 7 com diferença de 2
+  // - Jogos com vantagens
+
+  const DISP_POINTS = ["0","15","30","40","AD"];
+
+  let state = {
+    setScores: [],           // [{a:6,b:4}, {a:3,b:6}, ...]
+    gamesA: 0, gamesB: 0,    // jogos do set atual
+    pA: 0, pB: 0,            // pontos do jogo normal (interno)
+    tb: false, tbA: 0, tbB: 0,
+    server: 'A',
+    history: []
+  };
+
+  // --- Histórico robusto (corrige o "bloqueio") ---
+  function snapshotState() {
+    const snap = JSON.parse(JSON.stringify(state));
+    snap.history = []; // não carrega o histórico dentro do snapshot
+    return snap;
+  }
+
+  function save(){
+    state.history.push(snapshotState());
+    if (state.history.length > 200) state.history.shift();
+  }
+
+  function undo(){
+    if(state.history.length){
+      const prev = state.history.pop();
+      state = { ...prev, history: state.history };
+      render();
+    }
+  }
+
+  function swapServe(){
+    save();
+    state.server = (state.server === 'A') ? 'B' : 'A';
+    render();
+  }
+
+  function matchOver(){
+    const setsA = state.setScores.filter(s => s.a > s.b).length;
+    const setsB = state.setScores.filter(s => s.b > s.a).length;
+    return (setsA === 2 || setsB === 2);
+  }
+
+  // --- Pontos (vantagens) ---
+  function addPointNormal(team){
+    if(team === 'A') state.pA++;
+    else state.pB++;
+
+    // Vitória direta (sem deuce): >=4 e diferença >=2
+    if((state.pA >= 4 || state.pB >= 4) && Math.abs(state.pA - state.pB) >= 2){
+      winGame(state.pA > state.pB ? 'A' : 'B');
+      return;
+    }
+
+    // Deuce: se ambos >=4, volta a 40-40 (3-3)
+    if(state.pA >= 4 && state.pB >= 4){
+      state.pA = 3; state.pB = 3;
+      return;
+    }
+
+    // Guarda segurança para não crescer sem limite em cenários estranhos
+    state.pA = Math.min(state.pA, 4);
+    state.pB = Math.min(state.pB, 4);
+  }
+
+  // --- Tie-break ---
+  function addPointTB(team){
+    if(team === 'A') state.tbA++;
+    else state.tbB++;
+
+    const max = Math.max(state.tbA, state.tbB);
+    const diff = Math.abs(state.tbA - state.tbB);
+    if(max >= 7 && diff >= 2){
+      winSet(team, true);
+    }
+  }
+
+  // --- Jogos / Sets ---
+  function winGame(team){
+    state.pA = 0; state.pB = 0;
+
+    if(team === 'A') state.gamesA++;
+    else state.gamesB++;
+
+    // 6-6 => TB
+    if(state.gamesA === 6 && state.gamesB === 6){
+      state.tb = true;
+      state.tbA = 0; state.tbB = 0;
+      return;
+    }
+
+    // set ganha sem TB (>=6 e dif>=2)
+    if((state.gamesA >= 6 || state.gamesB >= 6) && Math.abs(state.gamesA - state.gamesB) >= 2){
+      winSet(state.gamesA > state.gamesB ? 'A' : 'B', false);
+      return;
+    }
+  }
+
+  function winSet(team, fromTB){
+    let a = state.gamesA, b = state.gamesB;
+    if(fromTB){
+      if(team === 'A'){ a = 7; b = 6; }
+      else { b = 7; a = 6; }
+    }
+    state.setScores.push({a, b});
+
+    // reset set atual
+    state.gamesA = 0; state.gamesB = 0;
+    state.pA = 0; state.pB = 0;
+    state.tb = false; state.tbA = 0; state.tbB = 0;
+
+    const setsA = state.setScores.filter(s => s.a > s.b).length;
+    const setsB = state.setScores.filter(s => s.b > s.a).length;
+    if(setsA === 2 || setsB === 2){
+      const w = (setsA > setsB) ? getName('A') : getName('B');
+      const el = document.getElementById('winner');
+      el.style.display = 'block';
+      el.textContent = `Vencedor: ${w}`;
+    }
+  }
+
+  function resetAll(){
+    if(!confirm('Reset ao placar?')) return;
+    state = {
+      setScores: [],
+      gamesA: 0, gamesB: 0,
+      pA: 0, pB: 0,
+      tb: false, tbA: 0, tbB: 0,
+      server: 'A',
+      history: []
+    };
+    document.getElementById('winner').style.display = 'none';
+    render();
+  }
+
+  // --- Display helpers ---
+  function getName(team){
+    const el = document.getElementById(team === 'A' ? 'nameA' : 'nameB');
+    const t = (el.innerText || '').trim();
+    return t || (team === 'A' ? 'Equipa A' : 'Equipa B');
+  }
+
+  function fmtPoint(pSelf, pOther){
+    if(pSelf <= 3) return DISP_POINTS[pSelf];
+    if(pSelf === 4 && pOther === 3) return "AD";
+    return "40";
+  }
+
+  function render(){
+    // serviço
+    const dotA = document.getElementById('dotA');
+    const dotB = document.getElementById('dotB');
+    const serveA = document.getElementById('serveToggleA');
+    const serveB = document.getElementById('serveToggleB');
+    const isA = state.server === 'A';
+    dotA.classList.toggle('on', isA);
+    dotB.classList.toggle('on', !isA);
+    serveA.style.visibility = isA ? 'visible' : 'hidden';
+    serveB.style.visibility = isA ? 'hidden' : 'visible';
+
+    // jogos
+    document.getElementById('gamesA').innerText = state.gamesA;
+    document.getElementById('gamesB').innerText = state.gamesB;
+
+    // modo e pontos
+    if(state.tb){
+      document.getElementById('pointsLbl').innerText = 'Tie-break';
+      document.getElementById('modeLbl').innerText = 'TB';
+      document.getElementById('pointsA').innerText = state.tbA;
+      document.getElementById('pointsB').innerText = state.tbB;
+    } else {
+      document.getElementById('pointsLbl').innerText = 'Pontos';
+      document.getElementById('modeLbl').innerText = 'Normal';
+      document.getElementById('pointsA').innerText = fmtPoint(state.pA, state.pB);
+      document.getElementById('pointsB').innerText = fmtPoint(state.pB, state.pA);
+    }
+
+    // sets (3 caixas)
+    const s = state.setScores;
+    const fill = (idx, team, show) => {
+      const el = document.getElementById(`s${idx+1}${team}`);
+      const box = el.closest('.setbox');
+      box.style.display = show ? 'block' : 'none';
+      if(!show) return;
+      el.innerText = (team === 'A') ? s[idx].a : s[idx].b;
+    };
+    for(let i=0;i<3;i++){
+      const show = Boolean(s[i]);
+      fill(i,'A', show);
+      fill(i,'B', show);
+    }
+
+    // bloquear clique se match terminou
+    const over = matchOver();
+    document.getElementById('pointsA').style.pointerEvents = over ? 'none' : 'auto';
+    document.getElementById('pointsB').style.pointerEvents = over ? 'none' : 'auto';
+
+    if(!over){
+      document.getElementById('winner').style.display = 'none';
+    }
+  }
+
+  // --- Eventos de clique nos PONTOS ---
+  document.getElementById('pointsA').addEventListener('click', () => {
+    if(matchOver()) return;
+    save();
+    state.tb ? addPointTB('A') : addPointNormal('A');
+    render();
+  });
+
+  document.getElementById('pointsB').addEventListener('click', () => {
+    if(matchOver()) return;
+    save();
+    state.tb ? addPointTB('B') : addPointNormal('B');
+    render();
+  });
+
+  // Undo/Reset/Serviço
+  document.getElementById('btnUndo').addEventListener('click', undo);
+  document.getElementById('btnReset').addEventListener('click', resetAll);
+  document.getElementById('serveToggleA').addEventListener('click', swapServe);
+  document.getElementById('serveToggleB').addEventListener('click', swapServe);
+
+  // editar nomes: Enter termina edição
+  ['nameA','nameB','editableTitle'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+    });
+  });
+
+  function formatName(el){
+    const text = (el.innerText || '').replace(/\s*\/\s*/, ' /\n');
+    el.textContent = text.trim();
+  }
+
+  ['nameA','nameB'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('blur', () => formatName(el));
+  });
+
+  formatName(document.getElementById('nameA'));
+  formatName(document.getElementById('nameB'));
+
+  // atalhos teclado
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if(k === 'a'){ document.getElementById('pointsA').click(); }
+    if(k === 'l'){ document.getElementById('pointsB').click(); }
+    if(k === 'z'){ undo(); }
+    if(k === 's'){ swapServe(); }
+    if(k === 'r'){ resetAll(); }
+  });
+
+  render();
+</script>
+</body>
+</html>
