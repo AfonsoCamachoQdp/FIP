@@ -5,28 +5,29 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Placar Padel — Overlay</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
     :root{
-      --qdp-blue:#0C3E5F;
-      --qdp-green:#B3C4B6;
-      --panel: rgba(7,16,24,0.86);
-      --line: rgba(179,196,182,0.28);
-      --score-dark: #1e242a;
-      --score-dark-border: #2b3136;
-      --score-yellow: #f0c85a;
-      --txt: #fff;
-      --muted: rgba(255,255,255,0.78);
-      --shadow: 0 10px 26px rgba(0,0,0,0.35);
-      --radius: 14px;
+      --blue:#0f3a56;
+      --blue-dark:#0b2d42;
+      --orange:#c9752f;
+      --white:#ffffff;
+      --grey:#dadada;
+      --grid-line:#b8b8b8;
+      --txt:#0b2f4a;
+      --num:#0f334c;
+      --row-h: 72px;
+      --title-h: 36px;
+      --team-w: 440px;
+      --set-w: 96px;
+      --points-w: 108px;
     }
 
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(900px 420px at 20% 0%, rgba(179,196,182,0.08), transparent 55%),
-        radial-gradient(900px 420px at 80% 0%, rgba(12,62,95,0.18), transparent 55%),
-        #0b1116;
+      font-family: "Montserrat", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+      background: #000;
       color:var(--txt);
     }
 
@@ -35,7 +36,8 @@
       display:flex;
       flex-direction:column;
       align-items:center;
-      padding: 2vh 1vw;
+      justify-content:center;
+      padding: 20px 20px;
     }
 
     .scoreboard-wrap{
@@ -47,22 +49,37 @@
       width:100%;
       display:flex;
       justify-content:flex-start;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
     .editable-top .title{
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--muted);
-      padding: 6px 10px;
-      border-radius: 8px;
+      color: var(--orange);
+      padding: 0 16px;
       outline: none;
       cursor:text;
+      width: var(--team-w);
+      height: var(--title-h);
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 0;
+    }
+    .editable-top .title::before{
+      content:"";
+      position:absolute;
+      inset: 0;
+      background: var(--white);
+      border: 2px solid var(--white);
+      clip-path: polygon(0 0, calc(100% - 32px) 0, 100% 100%, 0 100%);
+      z-index: -1;
+      pointer-events:none;
     }
     .editable-top .title:focus{
-      background: rgba(255,255,255,0.08);
-      box-shadow: 0 0 0 2px rgba(179,196,182,0.22) inset;
+      background: rgba(255,255,255,0.2);
+      box-shadow: 0 0 0 2px rgba(201,119,47,0.25) inset;
     }
 
     .logo{
@@ -75,72 +92,78 @@
 
     .overlay{
       width: fit-content;
-      background: linear-gradient(135deg, rgba(179,196,182,0.10), rgba(12,62,95,0.12)) , var(--panel);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
       overflow:hidden;
+      position: relative;
     }
 
     .row{
       display:grid;
-      grid-template-columns: fit-content(520px) auto auto auto;
+      grid-template-columns: var(--team-w) auto var(--points-w);
       align-items:center;
-      gap: 6px;
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(12,62,95,0.25);
+      gap: 0;
+      padding: 0;
+      border-bottom: 1px solid var(--grid-line);
     }
     .row:last-child{ border-bottom:0; }
 
     .team{
       display:flex;
       align-items:center;
-      gap: 12px;
-      width: fit-content;
-      max-width: 460px;
+      gap: 10px;
+      width: 100%;
       min-width:0;
+      background: linear-gradient(90deg, #11405e 0%, var(--blue) 55%, #0d3047 100%);
+      padding: 10px 16px;
+      height: var(--row-h);
+    }
+
+    .row:nth-child(even) .team{
+      background: linear-gradient(90deg, #0d364f 0%, var(--blue-dark) 55%, #09273a 100%);
     }
 
     /* Nome com MAIS letras: permite 2 linhas e reduz melhor */
     .name{
-      font-weight: 900;
-      letter-spacing: 0.04em;
+      font-weight: 500;
+      letter-spacing: 0.01em;
       font-size: 28px;
-      line-height: 1.10;
-      padding: 6px 10px;
-      border-radius: 10px;
+      line-height: 1.15;
+      padding: 0;
+      border-radius: 0;
       outline:none;
-      flex: 0 1 auto;
+      flex: 1 1 auto;
       min-width: 0;
-      max-width: 460px;
-      white-space: pre-wrap;    /* permite quebrar linha manual/auto */
-      overflow: visible;
+      white-space: pre-wrap;
+      overflow: hidden;
       display: block;
       cursor:text;
-      color: var(--qdp-green);
+      color: var(--white);
     }
     .name:focus{
       background: rgba(255,255,255,0.08);
-      box-shadow: 0 0 0 2px rgba(179,196,182,0.22) inset;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.18) inset;
     }
 
     .serve{
       display:flex;
       align-items:center;
       gap:10px;
-      padding: 0;
+      padding: 0 2px;
       border-radius: 999px;
       border: 0;
       background: transparent;
       cursor:pointer;
       user-select:none;
       font-size: 16px;
-      color: var(--muted);
+      color: var(--white);
       flex: 0 0 auto;
       white-space:nowrap;
     }
     .dot{
-      width:14px; height:14px; border-radius:999px;
+      width:18px; height:18px; border-radius:999px;
       background: #f5d75b;
       box-shadow: 0 0 0 4px rgba(245,215,91,0.22);
     }
@@ -151,18 +174,20 @@
 
     .sets{
       display:flex;
-      gap: 4px;
+      gap: 0;
       justify-self:start;
       width: auto;
+      background: var(--white);
+      border-left: 1px solid var(--grid-line);
     }
     .setbox{
-      border: 1px solid var(--score-dark-border);
-      border-radius: 6px;
+      border-right: 1px solid var(--grid-line);
+      border-radius: 0;
       padding: 0;
       text-align:center;
-      background: var(--score-dark);
-      width: 44px;
-      height: 44px;
+      background: var(--white);
+      width: var(--set-w);
+      height: var(--row-h);
       display:grid;
       place-items:center;
     }
@@ -174,9 +199,9 @@
       margin-bottom: 4px;
     }
     .setbox .val{
-      font-size: 22px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
       width: 100%;
       height: 100%;
       display:flex;
@@ -184,6 +209,7 @@
       justify-content:center;
       text-align: center;
       line-height: 1;
+      color: var(--num);
     }
 
     .games, .points{
@@ -192,8 +218,8 @@
       border-left: 0;
       padding-left: 0;
     }
-    .points{
-      margin-left: 6px;
+    .games{
+      display:none;
     }
     .games .lbl, .points .lbl{
       font-size: 11px;
@@ -208,40 +234,29 @@
       display:none;
     }
     .games .val{
-      font-size: 22px;
-      font-weight: 900;
-      letter-spacing: 0.03em;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 0;
-      border-radius: 6px;
-      background: var(--score-dark);
-      border: 1px solid var(--score-dark-border);
-      width: 44px;
-      height: 44px;
+      display:none;
     }
 
     /* PONTOS clicáveis (sem botões) */
     .points .val{
-      font-size: 22px;
-      font-weight: 900;
+      font-size: 40px;
+      font-weight: 500;
       letter-spacing: 0.02em;
       padding: 0;
-      border-radius: 6px;
+      border-radius: 0;
       display:flex;
       align-items:center;
       justify-content:center;
       cursor:pointer;
       user-select:none;
-      background: var(--score-yellow);
-      border: 1px solid #d2ad45;
-      color: #1b1b1b;
-      width: 44px;
-      height: 44px;
+      background: var(--grey);
+      border: 0;
+      color: var(--num);
+      width: var(--points-w);
+      height: var(--row-h);
     }
     .points .val:hover{
-      background: #f6d06a;
+      background: #cfcfcf;
     }
     .points .val:active{
       transform: translateY(1px);
@@ -309,13 +324,19 @@
       white-space:nowrap;
     }
 
-    @media (max-width: 1200px){
-      .row{ grid-template-columns: fit-content(420px) auto auto auto; }
-      .team{ max-width: 360px; }
-      .name{ max-width: 360px; font-size: 24px; }
-      .points .val{ font-size: 20px; }
-      .games .val{ font-size: 20px; }
-      .setbox .val{ font-size: 20px; }
+    @media (max-width: 700px){
+      :root{
+        --row-h: 68px;
+        --title-h: 34px;
+        --team-w: 320px;
+        --set-w: 74px;
+        --points-w: 90px;
+      }
+      .team{ padding: 8px 12px; }
+      .name{ font-size: 21px; }
+      .setbox .val{ font-size: 30px; }
+      .points .val{ font-size: 30px; }
+      .editable-top .title{ font-size: 18px; }
     }
   </style>
 </head>
@@ -585,19 +606,27 @@
       document.getElementById('pointsB').innerText = fmtPoint(state.pB, state.pA);
     }
 
-    // sets (3 caixas)
+    // sets (3 caixas) - mostra o set atual mesmo sem resultado fechado
     const s = state.setScores;
-    const fill = (idx, team, show) => {
+    const currentIdx = Math.min(s.length, 2);
+    const fill = (idx, team, show, val) => {
       const el = document.getElementById(`s${idx+1}${team}`);
       const box = el.closest('.setbox');
       box.style.display = show ? 'block' : 'none';
       if(!show) return;
-      el.innerText = (team === 'A') ? s[idx].a : s[idx].b;
+      el.innerText = val;
     };
     for(let i=0;i<3;i++){
-      const show = Boolean(s[i]);
-      fill(i,'A', show);
-      fill(i,'B', show);
+      if(s[i]){
+        fill(i, 'A', true, s[i].a);
+        fill(i, 'B', true, s[i].b);
+      } else if(i === currentIdx){
+        fill(i, 'A', true, state.gamesA);
+        fill(i, 'B', true, state.gamesB);
+      } else {
+        fill(i, 'A', false, '');
+        fill(i, 'B', false, '');
+      }
     }
 
     // bloquear clique se match terminou
