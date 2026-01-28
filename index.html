@@ -429,12 +429,32 @@
     </div>
   </div>
 
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
   // Regras:
   // - Melhor de 3 sets
   // - Set até 6 jogos; 6-6 -> tie-break
   // - Tie-break até 7 com diferença de 2
   // - Jogos com vantagens
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC8A4D9396gF6EfcHl0qZ6UfpwS1WGwA8w",
+    authDomain: "fip-scoreboard.firebaseapp.com",
+    databaseURL: "https://fip-scoreboard-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "fip-scoreboard",
+    storageBucket: "fip-scoreboard.firebasestorage.app",
+    messagingSenderId: "124280359695",
+    appId: "1:124280359695:web:3865be50a8240883888c7a",
+    measurementId: "G-3F5RKRYJB4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const stateRef = ref(db, "scoreboard/state");
+  const clientId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `c_${Math.random().toString(36).slice(2)}`;
+  const params = new URLSearchParams(window.location.search);
+  const isViewer = params.get("viewer") === "1" || params.get("view") === "1";
 
   const DISP_POINTS = ["0","15","30","40","AD"];
 
@@ -448,6 +468,42 @@
     server: 'A',
     history: []
   };
+
+  function getMeta(){
+    return {
+      title: (document.getElementById('editableTitle').innerText || '').trim(),
+      nameA: (document.getElementById('nameA').innerText || '').trim(),
+      nameB: (document.getElementById('nameB').innerText || '').trim()
+    };
+  }
+
+  function applyMeta(meta){
+    if(!meta) return;
+    if(typeof meta.title === 'string') document.getElementById('editableTitle').innerText = meta.title;
+    if(typeof meta.nameA === 'string') document.getElementById('nameA').innerText = meta.nameA;
+    if(typeof meta.nameB === 'string') document.getElementById('nameB').innerText = meta.nameB;
+  }
+
+  function pushState(){
+    const payload = {
+      clientId,
+      ts: Date.now(),
+      state,
+      meta: getMeta()
+    };
+    set(stateRef, payload);
+  }
+
+  let hasRemote = false;
+  onValue(stateRef, (snap) => {
+    const data = snap.val();
+    if(!data || !data.state) return;
+    if(data.clientId === clientId) return;
+    hasRemote = true;
+    state = { ...data.state, history: [] };
+    applyMeta(data.meta);
+    render();
+  });
 
   // --- Histórico robusto (corrige o "bloqueio") ---
   function snapshotState() {
@@ -466,6 +522,7 @@
       const prev = state.history.pop();
       state = { ...prev, history: state.history };
       render();
+      if(!isViewer) pushState();
     }
   }
 
@@ -473,6 +530,7 @@
     save();
     state.server = (state.server === 'A') ? 'B' : 'A';
     render();
+    if(!isViewer) pushState();
   }
 
   function matchOver(){
@@ -587,6 +645,7 @@
     };
     document.getElementById('winner').style.display = 'none';
     render();
+    if(!isViewer) pushState();
   }
 
   // --- Display helpers ---
@@ -671,24 +730,28 @@
 
   // --- Eventos de clique nos PONTOS ---
   document.getElementById('pointsA').addEventListener('click', () => {
+    if(isViewer) return;
     if(matchOver()) return;
     save();
     state.tb ? addPointTB('A') : addPointNormal('A');
     render();
+    pushState();
   });
 
   document.getElementById('pointsB').addEventListener('click', () => {
+    if(isViewer) return;
     if(matchOver()) return;
     save();
     state.tb ? addPointTB('B') : addPointNormal('B');
     render();
+    pushState();
   });
 
   // Undo/Reset/Serviço
-  document.getElementById('btnUndo').addEventListener('click', undo);
-  document.getElementById('btnReset').addEventListener('click', resetAll);
-  document.getElementById('serveToggleA').addEventListener('click', swapServe);
-  document.getElementById('serveToggleB').addEventListener('click', swapServe);
+  document.getElementById('btnUndo').addEventListener('click', () => { if(!isViewer) undo(); });
+  document.getElementById('btnReset').addEventListener('click', () => { if(!isViewer) resetAll(); });
+  document.getElementById('serveToggleA').addEventListener('click', () => { if(!isViewer) swapServe(); });
+  document.getElementById('serveToggleB').addEventListener('click', () => { if(!isViewer) swapServe(); });
 
   // editar nomes: Enter termina edição
   ['nameA','nameB','editableTitle'].forEach(id => {
@@ -705,7 +768,14 @@
 
   ['nameA','nameB'].forEach(id => {
     const el = document.getElementById(id);
-    el.addEventListener('blur', () => formatName(el));
+    el.addEventListener('blur', () => {
+      formatName(el);
+      if(!isViewer) pushState();
+    });
+  });
+
+  document.getElementById('editableTitle').addEventListener('blur', () => {
+    if(!isViewer) pushState();
   });
 
   formatName(document.getElementById('nameA'));
@@ -713,6 +783,7 @@
 
   // atalhos teclado
   window.addEventListener('keydown', (e) => {
+    if(isViewer) return;
     const k = e.key.toLowerCase();
     if(k === 'a'){ document.getElementById('pointsA').click(); }
     if(k === 'l'){ document.getElementById('pointsB').click(); }
@@ -721,7 +792,19 @@
     if(k === 'r'){ resetAll(); }
   });
 
+  if(isViewer){
+    document.getElementById('editableTitle').setAttribute('contenteditable', 'false');
+    document.getElementById('nameA').setAttribute('contenteditable', 'false');
+    document.getElementById('nameB').setAttribute('contenteditable', 'false');
+  }
+
   render();
+
+  if(!isViewer){
+    setTimeout(() => {
+      if(!hasRemote) pushState();
+    }, 600);
+  }
 </script>
 </body>
 </html>
