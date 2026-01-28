@@ -455,6 +455,8 @@
   const clientId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `c_${Math.random().toString(36).slice(2)}`;
   const params = new URLSearchParams(window.location.search);
   const isViewer = params.get("viewer") === "1" || params.get("view") === "1";
+  let suppressPush = false;
+  let lastSent = "";
 
   const DISP_POINTS = ["0","15","30","40","AD"];
 
@@ -491,6 +493,9 @@
       state,
       meta: getMeta()
     };
+    const sig = JSON.stringify(payload.state) + "|" + JSON.stringify(payload.meta);
+    if(sig === lastSent) return;
+    lastSent = sig;
     set(stateRef, payload);
   }
 
@@ -500,9 +505,11 @@
     if(!data || !data.state) return;
     if(data.clientId === clientId) return;
     hasRemote = true;
+    suppressPush = true;
     state = { ...data.state, history: [] };
     applyMeta(data.meta);
     render();
+    suppressPush = false;
   });
 
   // --- Histórico robusto (corrige o "bloqueio") ---
@@ -725,6 +732,10 @@
 
     if(!over){
       document.getElementById('winner').style.display = 'none';
+    }
+
+    if(!isViewer && !suppressPush){
+      pushState();
     }
   }
 
