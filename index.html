@@ -44,7 +44,7 @@
       width: fit-content;
       max-width: 97vw;
     }
-
+h
     .editable-top{
       width:100%;
       display:flex;
@@ -708,6 +708,8 @@
       document.getElementById('pointsB').parentElement.classList.toggle('golden', state.golden);
     }
 
+    const over = matchOver();
+
     // sets (3 caixas) - mostra o set atual mesmo sem resultado fechado
     const sRaw = state.setScores || [];
     const s = Array.isArray(sRaw)
@@ -725,7 +727,7 @@
       if(s[i]){
         fill(i, 'A', true, s[i].a);
         fill(i, 'B', true, s[i].b);
-      } else if(i === currentIdx){
+      } else if(!over && i === currentIdx){
         fill(i, 'A', true, state.gamesA);
         fill(i, 'B', true, state.gamesB);
       } else {
@@ -735,7 +737,6 @@
     }
 
     // bloquear clique se match terminou
-    const over = matchOver();
     document.getElementById('pointsA').style.pointerEvents = over ? 'none' : 'auto';
     document.getElementById('pointsB').style.pointerEvents = over ? 'none' : 'auto';
 
